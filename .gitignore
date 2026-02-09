@@ -1,0 +1,18 @@
+.mathpilot.yaml
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# OS
+.DS_Store
+.vscode/
+.idea/
+
+# Runtime
+.mathpilot/
+mathpilot_projects/
