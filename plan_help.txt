@@ -1,0 +1,34 @@
+                    
+ Usage: python -m   
+ mathpilot.cli.main 
+ plan               
+            [OPTION 
+ S] PAPER_ID        
+                    
+ Generate an        
+ implementation     
+ plan from a paper. 
+                    
+╭─ Arguments ──────╮
+│ *    …        a… │
+│               ID │
+│               or │
+│               U… │
+│               of │
+│               t… │
+│               p… │
+│               [… │
+╰──────────────────╯
+╭─ Options ────────╮
+│ -…        TE  O… │
+│           XT  p… │
+│               f… │
+│               t… │
+│               p… │
+│ -…            S… │
+│               t… │
+│               m… │
+│               a… │
+│               e… │
+╰──────────────────╯
+

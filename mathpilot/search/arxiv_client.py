@@ -6,6 +6,9 @@ from typing import List, Optional
 from mathpilot.search.models import Paper
 from mathpilot.utils import get_logger
 
+import httpx
+from pathlib import Path
+
 logger = get_logger("search")
 
 class ArxivClient:
@@ -16,6 +19,25 @@ class ArxivClient:
     def __init__(self, max_results: int = 10, cache_dir: Optional[str] = None):
         self.max_results = max_results
         self.cache_dir = cache_dir
+
+    def download_pdf(self, pdf_url: str, output_path: str) -> str:
+        """Download PDF from URL to output path."""
+        logger.info(f"Downloading PDF from {pdf_url} to {output_path}")
+        
+        # Ensure directory exists
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            with httpx.Client(follow_redirects=True, timeout=30.0) as client:
+                response = client.get(pdf_url)
+                response.raise_for_status()
+                path.write_bytes(response.content)
+            logger.info("Download complete.")
+            return str(path)
+        except Exception as e:
+            logger.error(f"Failed to download PDF: {e}")
+            raise
 
     def search(self, query: str) -> List[Paper]:
         """
