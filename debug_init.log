@@ -1,0 +1,42 @@
+Initializing MathPilot...
+                    
+ Usage: python -m   
+ mathpilot.cli.main 
+ search [OPTIONS]   
+ QUERY              
+                    
+ Search for         
+ research papers on 
+ arXiv.             
+                    
+╭─ Arguments ──────╮
+│ *    …        N… │
+│               l… │
+│               q… │
+│               or │
+│               k… │
+│               [… │
+╰──────────────────╯
+╭─ Options ────────╮
+│ -…         I  M… │
+│            N  n… │
+│            T  of │
+│            E  p… │
+│            G  to │
+│            E  r… │
+│            R  [… │
+│               5] │
+│ -…    …       D… │
+│               P… │
+│               of │
+│               f… │
+│               p… │
+│               [… │
+│               n… │
+│ -…            S… │
+│               t… │
+│               m… │
+│               a… │
+│               e… │
+╰──────────────────╯
+

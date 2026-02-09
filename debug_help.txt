@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 189, in _run_module_as_main
+  File "<frozen runpy>", line 112, in _get_module_details
+  File "/home/ace/gitfiles/cobio/mathpilot/cli/__init__.py", line 6, in <module>
+    from mathpilot.utils.logging import get_logger
+ModuleNotFoundError: No module named 'mathpilot.utils.logging'
+Initializing MathPilot...

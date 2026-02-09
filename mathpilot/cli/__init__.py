@@ -3,7 +3,7 @@
 from typing import Optional
 import typer
 
-from mathpilot.utils.logging import get_logger
+from mathpilot.utils import get_logger
 
 app = typer.Typer(help="Scientific workflow assistant")
 logger = get_logger(__name__)
