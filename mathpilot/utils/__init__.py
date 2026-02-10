@@ -5,6 +5,15 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# File browser utilities for interactive folder and PDF selection
+from .file_browser import (
+    get_common_pdf_locations,
+    find_pdfs_in_folder,
+    list_directories,
+    select_folder_interactive,
+    select_pdf_interactive,
+)
+
 
 def get_logger(name: str) -> logging.Logger:
     """
