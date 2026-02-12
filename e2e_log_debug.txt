@@ -1,0 +1,29 @@
+╭──────────────────╮
+│ MathPilot        │
+│ End-to-End Test  │
+│ Testing: Search  │
+│ → Parse → Plan → │
+│ Generate →       │
+│ Execute          │
+╰──────────────────╯
+
+====================
+====================
+====================
+====================
+Phase 1: Search for 
+Papers on arXiv
+====================
+====================
+====================
+====================
+Searching arXiv for:
+'kalman filter 
+sensor fusion'
+2026-02-10 04:36:42,661 - search - INFO - Querying arXiv for: kalman filter sensor fusion
+2026-02-10 04:36:42,662 - search - INFO - ArXiv API URL: http://export.arxiv.org/api/query?search_query=all%3Akalman+filter+sensor+fusion&start=0&max_results=3&sortBy=relevance&sortOrder=descending
+2026-02-10 04:36:43,827 - search - ERROR - Error parsing arXiv feed: <unknown>:2:0: syntax error
+No papers found!
+
+Test failed at Phase
+1

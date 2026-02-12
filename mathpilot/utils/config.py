@@ -30,9 +30,11 @@ class Config:
         # Default configuration
         config = {
             "llm": {
-                "provider": "gemini",
-                "model": "gemini-2.5-pro",
-                "api_key": os.getenv("GEMINI_API_KEY"),
+                "provider": os.getenv("LLM_PROVIDER", "groq"), # Default to groq as requested
+                "model": os.getenv("LLM_MODEL", "moonshotai/kimi-k2-instruct-0905"),
+                "gemini_api_key": os.getenv("GEMINI_API_KEY"),
+                "anthropic_api_key": os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY"),
+                "groq_api_key": os.getenv("GROQ_API_KEY"),
             },
             "arxiv": {
                 "cache_dir": os.path.expanduser("~/.mathpilot/cache"),

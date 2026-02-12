@@ -34,12 +34,15 @@ def search(
     if not papers:
         console.print("[yellow]No papers found.[/yellow]")
         return
+        
+    console.print(f"[dim]Found {len(papers)} papers.[/dim]")
+    console.print("[dim italic]Tip: Use quotes for exact match (e.g. \"Attention Is All You Need\") or prefixes (ti:, au:).[/dim italic]\n")
 
-    table = Table(title=f"ArXiv Search Results: {query}")
+    table = Table(title=f"ArXiv Search Results: {query}", padding=(0, 1), show_lines=True)
     table.add_column("ID", style="cyan", no_wrap=True)
-    table.add_column("Title", style="magenta")
-    table.add_column("Authors", style="green")
-    table.add_column("Published", style="blue")
+    table.add_column("Title", style="magenta", ratio=3)
+    table.add_column("Authors", style="green", ratio=2)
+    table.add_column("Published", style="blue", no_wrap=True)
 
     for paper in papers:
         table.add_row(
@@ -53,15 +56,11 @@ def search(
     
     if download:
         console.print("[dim]Download functionality not yet implemented.[/dim]")
+    
+    return papers
 
-@app.command()
-def plan(
-    paper_id: str = typer.Argument(..., help="arXiv ID or URL of the paper"),
-    output: Optional[str] = typer.Option(None, help="Output path for the plan"),
-):
-    """
-    Generate an implementation plan from a paper.
-    """
+def _plan_impl(paper_id: str, output: Optional[str] = None):
+    """Internal implementation of plan workflow."""
     import os
     from rich.console import Console
     from mathpilot.search import ArxivClient
@@ -124,7 +123,7 @@ def plan(
     
     with console.status(f"[bold magenta]Generating implementation plan..."):
         try:
-            plan = generate_plan(paper_title, algorithm)
+            plan_obj = generate_plan(paper_title, algorithm)
         except Exception as e:
             console.print(f"[red]Planning failed: {e}[/red]")
             raise typer.Exit(code=1)
@@ -134,26 +133,29 @@ def plan(
         output = f"plan_{algorithm.name.lower().replace(' ', '_')}.json"
     
     with open(output, "w") as f:
-        f.write(plan.model_dump_json(indent=2))
+        f.write(plan_obj.model_dump_json(indent=2))
         
     console.print(f"[bold green]Plan saved to: {output}[/bold green]")
     
     # Display summary
     console.print("\n[bold underline]Implementation Steps:[/bold underline]")
-    for step in plan.steps:
+    for step in plan_obj.steps:
         console.print(f"[cyan]{step.step_id}[/cyan]: {step.title}")
         
     return output
 
 @app.command()
-def generate(
-    plan_path: str = typer.Argument(..., help="Path to the plan file"),
-    project_name: str = typer.Option(None, help="Name of the project"),
-    output_dir: str = typer.Option("~/mathpilot_projects", help="Base directory for projects"),
+def plan(
+    paper_id: str = typer.Argument(..., help="arXiv ID or URL of the paper"),
+    output: Optional[str] = typer.Option(None, help="Output path for the plan"),
 ):
     """
-    Generate Python code from an implementation plan.
+    Generate an implementation plan from a paper.
     """
+    return _plan_impl(paper_id, output)
+
+def _generate_impl(plan_path: str, project_name: Optional[str] = None, output_dir: str = "~/mathpilot_projects"):
+    """Internal implementation of generate workflow."""
     from rich.console import Console
     from mathpilot.planner.models import ImplementationPlan
     from mathpilot.generator import generate_project_code, generate_requirements
@@ -165,8 +167,8 @@ def generate(
     try:
         with open(plan_path, "r") as f:
             plan_json = f.read()
-            plan = ImplementationPlan.model_validate_json(plan_json)
-        console.print(f"[green]Loaded plan: {plan.paper_title} - {plan.algorithm_name}[/green]")
+            plan_obj = ImplementationPlan.model_validate_json(plan_json)
+        console.print(f"[green]Loaded plan: {plan_obj.paper_title} - {plan_obj.algorithm_name}[/green]")
     except Exception as e:
         console.print(f"[red]Failed to load plan: {e}[/red]")
         raise typer.Exit(code=1)
@@ -174,7 +176,7 @@ def generate(
     # 2. Determine Project Name
     if not project_name:
         # Clean up algorithm name for directory
-        safe_name = "".join(c if c.isalnum() else "_" for c in plan.algorithm_name)
+        safe_name = "".join(c if c.isalnum() else "_" for c in plan_obj.algorithm_name)
         project_name = safe_name.lower()
         
     # 3. Create Workspace
@@ -182,8 +184,8 @@ def generate(
         try:
             project = create_project(
                 name=project_name,
-                task=plan.summary,
-                paper_title=plan.paper_title,
+                task=plan_obj.summary,
+                paper_title=plan_obj.paper_title,
                 base_dir=output_dir
             )
             console.print(f"[green]Created project at: {project.root_dir}[/green]")
@@ -194,7 +196,7 @@ def generate(
     # 4. Generate Code
     with console.status(f"[bold magenta]Generating code (this may take a while)..."):
         try:
-            templates = generate_project_code(plan)
+            templates = generate_project_code(plan_obj)
             console.print(f"[green]Generated {len(templates)} code files.[/green]")
         except Exception as e:
             console.print(f"[red]Code generation failed: {e}[/red]")
@@ -221,9 +223,20 @@ def generate(
             
     console.print(f"\n[bold green]Success! Project generated at: {project.root_dir}[/bold green]")
     console.print(f"  pip install -r requirements.txt")
-    console.print(f"  python src/<main_script>.py")
+    console.print(f"  python src/main.py")
     
     return project.root_dir
+
+@app.command()
+def generate(
+    plan_path: str = typer.Argument(..., help="Path to the plan file"),
+    project_name: str = typer.Option(None, help="Name of the project"),
+    output_dir: str = typer.Option("~/mathpilot_projects", help="Base directory for projects"),
+):
+    """
+    Generate Python code from an implementation plan.
+    """
+    return _generate_impl(plan_path, project_name, output_dir)
 
 @app.command()
 def run(
@@ -305,8 +318,35 @@ def interactive():
             
         elif choice == "1":
             query = Prompt.ask("Enter search query")
-            search(query=query, max_results=5, download=False)
-            console.print("[dim]Use 'plan <paper_id>' to proceed with a specific paper.[/dim]")
+            papers = search(query=query, max_results=5, download=False)
+            
+            if papers:
+                console.print("\n[bold]Select a paper to implement:[/bold]")
+                # Create options 1..N and 0 for cancel
+                choices = [str(i) for i in range(1, len(papers) + 1)]
+                choices.append("0")
+                
+                paper_choice = Prompt.ask("Choose paper number (0 to cancel)", choices=choices, default="0")
+                
+                if paper_choice != "0":
+                    selected_paper = papers[int(paper_choice) - 1]
+                    console.print(f"[green]Selected: {selected_paper.title}[/green]")
+                    
+                    if Confirm.ask("Generate implementation plan for this paper?"):
+                        try:
+                            # Use internal impl to avoid OptionInfo error
+                            plan_path = _plan_impl(paper_id=selected_paper.id)
+                            
+                            if plan_path and Confirm.ask(f"\nPlan saved to {plan_path}. Generate project code now?"):
+                                project_dir = _generate_impl(plan_path=str(plan_path))
+                                
+                                if project_dir:
+                                    console.print(f"[bold green]Project ready at: {project_dir}[/bold green]")
+                                    
+                        except typer.Exit:
+                            pass
+                        except Exception as e:
+                           console.print(f"[red]Error during processing: {e}[/red]")
             
         elif choice == "2":
             # Browse for PDF
@@ -400,10 +440,11 @@ def interactive():
                 
                 if Confirm.ask("Generate implementation plan for this paper?"):
                     try:
-                        plan_path = plan(paper_id=str(selected_pdf))
+                        # Use internal impl to avoid OptionInfo error
+                        plan_path = _plan_impl(paper_id=str(selected_pdf))
                         
                         if plan_path and Confirm.ask(f"\nPlan saved to {plan_path}. Generate project code now?"):
-                            project_dir = generate(plan_path=str(plan_path))
+                            project_dir = _generate_impl(plan_path=str(plan_path))
                             
                             if project_dir:
                                 console.print(f"[bold green]Project ready at: {project_dir}[/bold green]")
@@ -417,6 +458,206 @@ def interactive():
                 console.print(f"[red]Error: {e}[/red]")
             except KeyboardInterrupt:
                 console.print("[yellow]Cancelled[/yellow]")
+
+@app.command()
+def implement(
+    task: str = typer.Argument(..., help="Natural language description of what to implement"),
+    paper_id: Optional[str] = typer.Option(None, help="arXiv ID if you have a specific paper"),
+    max_results: int = typer.Option(3, help="Max papers to search if no paper_id provided"),
+    project_name: Optional[str] = typer.Option(None, help="Name for the generated project"),
+    output_dir: str = typer.Option("~/mathpilot_projects", help="Base directory for projects"),
+    execute: bool = typer.Option(False, help="Execute the generated code after creation"),
+):
+    """
+    End-to-end workflow: search for papers, generate plan, create project, and optionally execute.
+    
+    This is the main entry point that orchestrates the full implementation workflow.
+    """
+    from rich.console import Console
+    from rich.panel import Panel
+    from mathpilot.search import ArxivClient
+    from mathpilot.parser import parse_paper
+    from mathpilot.planner import generate_plan
+    from mathpilot.generator import generate_project_code, generate_requirements
+    from mathpilot.workspace import create_project
+    from mathpilot.executor import execute_script
+    import os
+    import tempfile
+    from pathlib import Path
+
+    console = Console()
+    console.print(Panel.fit(f"[bold cyan]MathPilot Implementation Workflow[/bold cyan]", border_style="blue"))
+    
+    # Step 1: Find or use provided paper
+    paper_title = "Unknown Paper"
+    pdf_path = None
+    
+    if paper_id:
+        console.print(f"\n[bold]Step 1: Resolving paper:[/bold] {paper_id}")
+        with console.status(f"[bold blue]Fetching paper: {paper_id}..."):
+            client = ArxivClient()
+            papers = client.search(paper_id)
+            if not papers:
+                console.print(f"[red]Paper not found: {paper_id}[/red]")
+                raise typer.Exit(code=1)
+            paper = papers[0]
+            paper_title = paper.title
+            
+            cache_dir = os.path.expanduser("~/.mathpilot/cache")
+            os.makedirs(cache_dir, exist_ok=True)
+            pdf_path = os.path.join(cache_dir, f"{paper.id}.pdf")
+            
+            if not os.path.exists(pdf_path):
+                console.print(f"Downloading PDF...")
+                if paper.pdf_url:
+                    client.download_pdf(str(paper.pdf_url), pdf_path)
+                else:
+                    console.print("[red]No PDF URL found.[/red]")
+                    raise typer.Exit(code=1)
+            else:
+                console.print(f"[dim]Using cached PDF[/dim]")
+    else:
+        console.print(f"\n[bold]Step 1: Searching papers:[/bold] {task}")
+        with console.status(f"[bold green]Searching arXiv..."):
+            client = ArxivClient(max_results=max_results)
+            papers = client.search(task)
+        
+        if not papers:
+            console.print("[red]No papers found.[/red]")
+            raise typer.Exit(code=1)
+        
+        paper = papers[0]
+        paper_title = paper.title
+        console.print(f"[green]Found: {paper_title}[/green]")
+        
+        cache_dir = os.path.expanduser("~/.mathpilot/cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        pdf_path = os.path.join(cache_dir, f"{paper.id}.pdf")
+        
+        if not os.path.exists(pdf_path):
+            console.print(f"Downloading PDF...")
+            if paper.pdf_url:
+                with console.status("Downloading..."):
+                    client.download_pdf(str(paper.pdf_url), pdf_path)
+            else:
+                console.print("[red]No PDF URL found.[/red]")
+                raise typer.Exit(code=1)
+        else:
+            console.print(f"[dim]Using cached PDF[/dim]")
+    
+    # Step 2: Parse PDF
+    console.print(f"\n[bold]Step 2: Parsing paper content[/bold]")
+    with console.status(f"[bold yellow]Extracting algorithms (this may take 1-2 minutes)..."):
+        try:
+            parsed_paper = parse_paper(pdf_path, paper_title)
+            console.print(f"[green]✓ Extracted {len(parsed_paper.algorithms)} algorithm(s)[/green]")
+        except Exception as e:
+            console.print(f"[red]Parsing failed: {e}[/red]")
+            logger.exception("Parse failed")
+            raise typer.Exit(code=1)
+    
+    if not parsed_paper.algorithms:
+        console.print("[red]No algorithms found in paper.[/red]")
+        raise typer.Exit(code=1)
+    
+    algorithm = parsed_paper.algorithms[0]
+    
+    # Step 3: Generate Plan
+    console.print(f"\n[bold]Step 3: Generating implementation plan[/bold]")
+    console.print(f"Algorithm: [cyan]{algorithm.name}[/cyan]")
+    
+    with console.status(f"[bold magenta]Structuring workflow..."):
+        try:
+            plan_obj = generate_plan(paper_title, algorithm)
+            console.print(f"[green]✓ Generated {len(plan_obj.steps)} workflow steps[/green]")
+        except Exception as e:
+            console.print(f"[red]Planning failed: {e}[/red]")
+            logger.exception("Planning failed")
+            raise typer.Exit(code=1)
+    
+    # Step 4: Generate Code
+    console.print(f"\n[bold]Step 4: Generating starter code[/bold]")
+    with console.status(f"[bold magenta]Creating code templates..."):
+        try:
+            templates = generate_project_code(plan_obj)
+            console.print(f"[green]✓ Generated {len(templates)} code files[/green]")
+        except Exception as e:
+            console.print(f"[red]Code generation failed: {e}[/red]")
+            logger.exception("Code generation failed")
+            raise typer.Exit(code=1)
+    
+    # Step 5: Create Project
+    console.print(f"\n[bold]Step 5: Creating project workspace[/bold]")
+    
+    if not project_name:
+        safe_name = "".join(c if c.isalnum() else "_" for c in algorithm.name)
+        project_name = safe_name.lower()
+    
+    with console.status(f"[bold blue]Setting up project..."):
+        try:
+            project = create_project(
+                name=project_name,
+                task=plan_obj.summary,
+                paper_title=paper_title,
+                base_dir=output_dir
+            )
+            console.print(f"[green]✓ Created at: {project.root_dir}[/green]")
+        except Exception as e:
+            console.print(f"[red]Project creation failed: {e}[/red]")
+            logger.exception("Project creation failed")
+            raise typer.Exit(code=1)
+    
+    # Step 6: Write Files
+    console.print(f"\n[bold]Step 6: Writing project files[/bold]")
+    with console.status(f"[bold yellow]Writing to disk..."):
+        try:
+            for filename, template in templates.items():
+                file_path = project.code_dir / filename
+                with open(file_path, "w") as f:
+                    f.write(template.code)
+            
+            reqs = generate_requirements(templates)
+            with open(project.root_dir / "requirements.txt", "w") as f:
+                f.write(reqs)
+            
+            console.print(f"[green]✓ Files written[/green]")
+        except Exception as e:
+            console.print(f"[red]Failed to write files: {e}[/red]")
+            logger.exception("File writing failed")
+            raise typer.Exit(code=1)
+    
+    # Summary
+    console.print(f"\n[bold green]✓ Project Ready![/bold green]")
+    console.print(f"Location: [cyan]{project.root_dir}[/cyan]")
+    console.print(f"\nNext steps:")
+    console.print(f"  cd {project.root_dir}")
+    console.print(f"  pip install -r requirements.txt")
+    console.print(f"  python src/main.py")
+    
+    # Optional: execute
+    if execute and templates:
+        console.print(f"\n[bold]Step 7: Executing generated code[/bold]")
+        # Find the first generated Python file
+        first_file = next((f for f in templates.keys() if f.endswith('.py')), None)
+        if first_file:
+            script_path = project.code_dir / first_file
+            console.print(f"Executing: [cyan]{first_file}[/cyan]")
+            
+            with console.status("Running..."):
+                result = execute_script(str(script_path), timeout=300)
+            
+            if result.success:
+                console.print("[bold green]✓ Execution Successful[/bold green]")
+                if result.stdout:
+                    console.print("\n[dim]Output:[/dim]")
+                    console.print(result.stdout[:500])  # Truncate long output
+            else:
+                console.print(f"[bold yellow]⚠ Execution exited with code {result.exit_code}[/bold yellow]")
+                if result.stderr:
+                    console.print("\n[dim]Errors:[/dim]")
+                    console.print(result.stderr[:500])
+        else:
+            console.print("[yellow]No executable files generated[/yellow]")
 
 if __name__ == "__main__":
     app()

@@ -1,0 +1,28 @@
+╭──────────────────╮
+│ MathPilot        │
+│ End-to-End Test  │
+│ Testing: Search  │
+│ → Parse → Plan → │
+│ Generate →       │
+│ Execute          │
+╰──────────────────╯
+
+====================
+====================
+====================
+====================
+Phase 1: Search for 
+Papers on arXiv
+====================
+====================
+====================
+====================
+Searching arXiv for:
+'kalman filter 
+sensor fusion'
+2026-02-10 04:36:09,874 - search - INFO - Querying arXiv for: kalman filter sensor fusion
+2026-02-10 04:36:10,883 - search - ERROR - Error parsing arXiv feed: <unknown>:2:0: syntax error
+No papers found!
+
+Test failed at Phase
+1

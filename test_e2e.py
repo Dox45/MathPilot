@@ -20,6 +20,7 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 
 # Suppress warnings
 import warnings
@@ -44,7 +45,7 @@ def test_phase_1_search():
     try:
         from mathpilot.search import ArxivClient
         
-        query = "kalman filter sensor fusion"
+        query = "Selective Kalman Filter"
         console.print(f"Searching arXiv for: '{query}'")
         
         client = ArxivClient(max_results=3)
@@ -394,6 +395,11 @@ def main(
         "--skip-download",
         help="Skip PDF download (use cached if available)"
     ),
+    pdf_path: Optional[Path] = typer.Option(
+        None,
+        "--pdf-path",
+        help="Path to local PDF file (skips search and download)"
+    ),
 ):
     """Run end-to-end test of MathPilot pipeline."""
     
@@ -403,20 +409,40 @@ def main(
         style="bold blue"
     ))
     
-    # Phase 1: Search
-    paper = test_phase_1_search()
-    if not paper:
-        console.print("\n[red]Test failed at Phase 1[/red]")
-        sys.exit(1)
-    
-    # Phase 2: Download PDF
-    if skip_download:
-        console.print("\n[yellow]Skipping PDF download (--skip-download)[/yellow]")
-        pdf_path = None
+    paper = None
+    if pdf_path:
+        console.print(f"\n[yellow]Using local PDF (skipping Phases 1 & 2): {pdf_path}[/yellow]")
+        if not pdf_path.exists():
+            console.print(f"[red]PDF not found: {pdf_path}[/red]")
+            sys.exit(1)
+            
+        # Create dummy paper object for title (infer from filename or use default)
+        from mathpilot.search.models import Paper
+        paper = Paper(
+            id="local_test",
+            title=pdf_path.stem.replace("_", " ").title(),
+            authors=["Local Author"],
+            summary="Local test paper",
+            published=datetime.now(),
+            updated=datetime.now(),
+            pdf_url="http://localhost/local.pdf", # Satisfy HttpUrl validation
+            category="cs"
+        )
     else:
-        pdf_path = test_phase_2_download_pdf(paper)
-        if not pdf_path:
-            console.print("\n[yellow]Skipping to Phase 4 (PDF download failed)[/yellow]")
+        # Phase 1: Search
+        paper = test_phase_1_search()
+        if not paper:
+            console.print("\n[red]Test failed at Phase 1[/red]")
+            sys.exit(1)
+        
+        # Phase 2: Download PDF
+        if skip_download:
+            console.print("\n[yellow]Skipping PDF download (--skip-download)[/yellow]")
+            pdf_path = None
+        else:
+            pdf_path = test_phase_2_download_pdf(paper)
+            if not pdf_path:
+                console.print("\n[yellow]Skipping to Phase 4 (PDF download failed)[/yellow]")
     
     # Phase 3: Parse (requires PDF)
     parsed_paper = None

@@ -1,0 +1,33 @@
+╭──────────────────╮
+│ MathPilot        │
+│ End-to-End Test  │
+│ Testing: Search  │
+│ → Parse → Plan → │
+│ Generate →       │
+│ Execute          │
+╰──────────────────╯
+
+====================
+====================
+====================
+====================
+Phase 1: Search for 
+Papers on arXiv
+====================
+====================
+====================
+====================
+Searching arXiv for:
+'kalman filter 
+sensor fusion'
+2026-02-10 04:38:28,173 - search - INFO - Querying arXiv for: kalman filter sensor fusion
+2026-02-10 04:38:28,174 - search - INFO - ArXiv API URL: http://export.arxiv.org/api/query?search_query=all%3Akalman+filter+sensor+fusion&start=0&max_results=3&sortBy=relevance&sortOrder=descending
+2026-02-10 04:38:29,801 - search - WARNING - Rate limit hit (429), retrying...
+2026-02-10 04:38:32,671 - search - WARNING - Rate limit hit (429), retrying...
+2026-02-10 04:38:35,455 - search - WARNING - Rate limit hit (429), retrying...
+2026-02-10 04:38:35,456 - search - ERROR - Failed to fetch ArXiv feed after retries: Client error '429 Unknown Error' for url 'https://export.arxiv.org/api/query?search_query=all%3Akalman+filter+sensor+fusion&start=0&max_results=3&sortBy=relevance&sortOrder=descending'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+No papers found!
+
+Test failed at Phase
+1

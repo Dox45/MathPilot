@@ -1,5 +1,5 @@
 from typing import List, Optional
-from mathpilot.utils.logging import get_logger
+from mathpilot.utils import get_logger
 from mathpilot.utils.llm import call_gemini
 from mathpilot.parser.models import ExtractedAlgorithm
 from mathpilot.planner.models import ImplementationPlan, WorkflowStep, StepType
@@ -9,7 +9,7 @@ logger = get_logger("planner")
 class PlanningError(Exception):
     pass
 
-def generate_plan(paper_title: str, algorithm: ExtractedAlgorithm, model_name: str = "gemini-2.5-pro") -> ImplementationPlan:
+def generate_plan(paper_title: str, algorithm: ExtractedAlgorithm, model_name: Optional[str] = None) -> ImplementationPlan:
     """
     Generate an implementation plan from an extracted algorithm.
     
