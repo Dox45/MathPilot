@@ -1,7 +1,0 @@
-Starting minimal test...
-API Key present: True
-Client created.
-Calling model: moonshotai/kimi-k2-instruct-0905
-Response object type: <class 'groq.types.chat.chat_completion.ChatCompletion'>
-Choices: [Choice(finish_reason='stop', index=0, logprobs=None, message=ChatCompletionMessage(content="Yes, I'm Kimi—your AI assistant from Moonshot AI. How can I help you today?", role='assistant', annotations=None, executed_tools=None, function_call=None, reasoning=None, tool_calls=None))]
-Content: Yes, I'm Kimi—your AI assistant from Moonshot AI. How can I help you today?

@@ -1,3 +1,0 @@
-Starting minimal test...
-API Key present: False
-Error: No API key found.
